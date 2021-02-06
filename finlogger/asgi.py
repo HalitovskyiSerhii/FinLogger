@@ -14,10 +14,3 @@ from django.core.asgi import get_asgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'finlogger.settings')
 
 application = get_asgi_application()
-
-import re
-filename = 'aa'
-re.compile(r'([\s*\d+\s*\/\s*\d+\s*\n\n]*'
-           r'[[-]*\s*Page\s*\d+[-]*\n\n]*'
-           r'ProSecure\s+'
-           f'{filename})')

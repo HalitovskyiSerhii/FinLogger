@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 
-
 class Parser(object):
     fn_matcher = re.compile(r'\d*\s*([\d*\-]*TOP.ENC)')
 
