@@ -125,7 +125,7 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULE = {
  'scan-storage-every-five-minutes': {
        'task': 'extractor.tasks.scan_storage',
-       'schedule': 15.0
+       'schedule': 300.0
     }
 }
 
