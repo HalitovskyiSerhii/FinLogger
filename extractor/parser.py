@@ -1,7 +1,9 @@
 import re
-from pathlib import Path
 
-class Parser(object):
+from logger import LOGGER
+
+
+class Parser:
     fn_matcher = re.compile(r'\d*\s*([\d*\-]*TOP.ENC)')
 
     extractor = re.compile(r'(\d{2}:\d{2}:\d{2})\s*CASH\s*WITHDRAWAL\s*([1-9]*,*[0-9]*,*[0-9]*\.[0-9]{1,2})\s*UAH\s*\n'
@@ -9,21 +11,28 @@ class Parser(object):
                            r'\s*([0-9X]{16}).*\n'
                            r'AUTH\. CODE:\s*(\d*)', re.MULTILINE)
 
-    def __init__(self, raw_filename):
-        filename = self.fn_matcher.findall(raw_filename)[0]
+    @classmethod
+    def get_matchers(cls, file):
+        raw_filename = file.stem
+        print(raw_filename,file)
+        prosecure = cls.fn_matcher.findall(raw_filename)[0]
 
-        self.page_breaker = re.compile(r'.*\n([\s*\d+/\n]*'
-                                       r'[[-]*\s*Page\s*\d+[-]*\n]*'
-                                       f'ProSecure\s+{filename}\s*\n*)', re.MULTILINE)
-        self.first_page = re.compile(r'([[-]*\s*Page\s*\d+[-]*\n]*'
-                                     f'ProSecure\s+{filename}\s*\n*)', re.MULTILINE)
+        page_breaker = re.compile(r'.*\n([\s*\d+/\n]*'
+                                  r'[[-]*\s*Page\s*\d+[-]*\n]*'
+                                  f'ProSecure\s+{prosecure}\s*\n*)', re.MULTILINE)
+        first_page = re.compile(r'([[-]*\s*Page\s*\d+[-]*\n]*'
+                                f'ProSecure\s+{prosecure}\s*\n*)', re.MULTILINE)
 
-    def read_pages(self, fn, page_count=-1, from_line=1):
-        print('#' * 5 + 'START READING' + '#' * 5)  # TODO Use logger
+        return first_page, page_breaker
+
+    @classmethod
+    def read_pages(cls, file, page_count=-1, from_line=1):
+        LOGGER.info('#' * 5 + 'START READING' + '#' * 5)
+        page_breaker, first_page = cls.get_matchers(file)
         pages = []
         cur_line = 0
         s = None
-        with Path(fn).open('rt') as f:
+        with file.open('rt') as f:
             read_lines = []
             for line in f:
                 cur_line += 1
@@ -36,7 +45,7 @@ class Parser(object):
                 read_lines.append(line)
                 s = ''.join(read_lines)
 
-                if self.page_breaker.findall(s):
+                if page_breaker.findall(s):
                     # When end of page found, adding it without page header
                     pages.append(''.join(read_lines[:-3]))
                     # Flush temp lines
@@ -44,24 +53,26 @@ class Parser(object):
                     if len(pages) == page_count:
                         return pages, cur_line + 1
                     continue
-                if self.first_page.match(s):
+                if first_page.match(s):
                     # First page header matcher
                     read_lines = []
 
         return pages, cur_line + 1, s
 
-    def extract(self, pages):
+    @classmethod
+    def extract(cls, pages):
         records = []
         for i in range(len(pages) - 1):
             # Concat two pages to search info into transactions
             # without page pages
             s = pages[i] + pages[i + 1]
-            res = self.extractor.findall(s)
+            res = cls.extractor.findall(s)
             # Add only unique values
             records += [record for record in res if record not in records]
 
         return records
 
-    def pipe(self, raw_filename):
-        pgs, _, broken = self.read_pages(raw_filename)
-        return self.extract(pgs + [broken])
+    @classmethod
+    def pipe(cls, file):
+        pgs, _, broken = cls.read_pages(file)
+        return cls.extract(pgs + [broken])

@@ -8,16 +8,17 @@ from finlogger.settings import DOWNLOAD_DIR
 
 class ExtractorService:
     path = DOWNLOAD_DIR
+
     @classmethod
     def process(cls, path=None):
-        pt = path if path else cls.path
+        pt = Path(path if path else cls.path)
         for unregistered in cls._unregistered():
-            file = s3.download_file(unregistered, cls.path, rm=True)
-            path_obj = getattr(file, 'path', Path(f'{cls.path}/{file.uid}'))
-            extracted = Parser.pipe(path_obj)
+            file = s3.download_file(unregistered, pt)
+            file_loc = getattr(file, 'path', pt/file.name)
+            extracted = Parser.pipe(file_loc)
             cls._save_instances(extracted)
-            s3.save_file
-
+            s3.save_file(file, pt)
+            s3.rm_file(unregistered)
 
     @classmethod
     def _save_instances(cls, extracted):
@@ -25,15 +26,14 @@ class ExtractorService:
         for time, amount, pan, code in extracted:
             instances.append(WithdrawalTransaction.crt(
                 time=time,
-                amount=amount,
+                amount=float(amount.replace(',','')),
                 pan=pan,
                 code=code
             ))
         WithdrawalTransaction.objects.bulk_create(instances)
 
-
     @classmethod
     def _unregistered(cls):
         storage_files = set(s3.list_files())
-        registered = set(File.objects.filter(processed=True).values_list('name', flat=True))
-        storage_files.difference(registered)
+        registered = set(File.objects.filter(processed=True).values_list('uid', flat=True))
+        return storage_files.difference(registered)

@@ -80,7 +80,6 @@ DATABASES = {
     },
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -114,12 +113,26 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
-
 STATIC_URL = '/static/'
+
+DOWNLOAD_DIR = os.environ.get('DOWNLOAD_DIR', '/tmp')
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+ 'scan-storage-every-five-minutes': {
+       'task': 'extractor.tasks.scan_storage',
+       'schedule': 15.0
+    }
+}
 
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY', 'A04ojA8dASDg3uhAS8dy23')
 AWS_SECRET_KEY = os.environ.get('AWS_SECRET_KEY', 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
 AWS_REGION_NAME = os.environ.get('AWS_REGION_NAME', 'us-east-1')
 AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME', 'atm-logs')
 
-MINIO_HOST = os.environ.get('AWS_BUCKET_NAME', '34.107.12.99:9000')
+MINIO_HOST = os.environ.get('MINIO_HOST', '34.107.12.99')
+MINIO_PORT = os.environ.get('MINIO_PORT', '9000')
