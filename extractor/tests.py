@@ -229,14 +229,14 @@ AUTH. CODE:  UTRNNO: 3095239401 RESP_CODE: 20
         with self.file.open('wt') as f:
             f.write(self.first_page)
         pages, _, broken = Parser.read_pages(self.file)
-        self.assertEqual(pages[1], self.first_page_result)
+        self.assertEqual(pages[0], self.first_page_result)
         self.assertEqual(Parser.prosecure, '8464-20161125-065747-231211-TOP.ENC')
 
     def test_inner_page_extraction(self):
         with self.file.open('wt') as f:
             f.write(self.inner_pages)
         pages, _, broken = Parser.read_pages(self.file)
-        self.assertEqual(pages[1:3], self.inner_pages_result)
+        self.assertEqual(pages, self.inner_pages_result)
         self.assertEqual(Parser.prosecure, '8464-20161125-065747-231211-TOP.ENC')
 
     def test_last_page_extraction(self):
