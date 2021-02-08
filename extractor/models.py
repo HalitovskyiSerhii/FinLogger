@@ -26,9 +26,9 @@ class File(models.Model):
 
 class WithdrawalTransaction(models.Model):
     pan = models.CharField(max_length=16, verbose_name="PAN")
-    code = models.CharField(max_length=7, verbose_name="Code", default='None')
+    code = models.DecimalField(max_digits=6, verbose_name="Code", decimal_places=0)
     time = models.TimeField()
-    amount = models.FloatField(default=0.0)
+    amount = models.FloatField()
 
     class Meta:
         app_label = 'extractor'
@@ -37,15 +37,13 @@ class WithdrawalTransaction(models.Model):
         return f'WTransaction - {self.pan[:3] + str(self.time)}'
 
     @classmethod
-    def crt(cls, time, *args, **kwargs):
-        inst = cls(time=datetime.strptime(time, '%H:%M:%S'), *args, **kwargs)
+    def crt(cls, time, amount, code, *args, **kwargs):
+        if type(time) == str:
+            time = datetime.strptime(time, '%H:%M:%S')
+        if type(amount) == str:
+            amount = float(amount.replace(',', ''))
+        if type(code) == str:
+            code = int(code)
+
+        inst = cls(time=time, amount=amount, code=code, *args, **kwargs)
         return inst
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            if t := kwargs.get('time'):
-                self.set_time(t)
-        super(WithdrawalTransaction, self).save(*args, **kwargs)
-
-    def set_time(self, t):
-        self.time = datetime.strptime(t, '%H:%M:%S')

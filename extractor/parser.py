@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 from logger import LOGGER
 
@@ -11,14 +12,16 @@ class Parser:
                            r'\s*([0-9X]{16}).*\n'
                            r'AUTH\. CODE:\s*(\d*)', re.MULTILINE)
 
+    prosecure = 'None'
+
     @classmethod
-    def get_matchers(cls, file):
-        raw_filename = file.stem
-        print(raw_filename,file)
+    def get_matchers(cls, path: Path):
+        raw_filename = path.stem
         prosecure = cls.fn_matcher.findall(raw_filename)[0]
+        cls.prosecure = prosecure
 
         page_breaker = re.compile(r'.*\n([\s*\d+/\n]*'
-                                  r'[[-]*\s*Page\s*\d+[-]*\n]*'
+                                  r'[[\-\s]*Page[\s\d+\-]*\n]*'
                                   f'ProSecure\s+{prosecure}\s*\n*)', re.MULTILINE)
         first_page = re.compile(r'([[-]*\s*Page\s*\d+[-]*\n]*'
                                 f'ProSecure\s+{prosecure}\s*\n*)', re.MULTILINE)
@@ -26,13 +29,13 @@ class Parser:
         return first_page, page_breaker
 
     @classmethod
-    def read_pages(cls, file, page_count=-1, from_line=1):
+    def read_pages(cls, path: Path, page_count=-1, from_line=1):
         LOGGER.info('#' * 5 + 'START READING' + '#' * 5)
-        page_breaker, first_page = cls.get_matchers(file)
+        page_breaker, first_page = cls.get_matchers(path)
         pages = []
         cur_line = 0
         s = None
-        with file.open('rt') as f:
+        with path.open('rt') as f:
             read_lines = []
             for line in f:
                 cur_line += 1
@@ -56,7 +59,6 @@ class Parser:
                 if first_page.match(s):
                     # First page header matcher
                     read_lines = []
-
         return pages, cur_line + 1, s
 
     @classmethod
@@ -73,6 +75,6 @@ class Parser:
         return records
 
     @classmethod
-    def pipe(cls, file):
-        pgs, _, broken = cls.read_pages(file)
+    def pipe(cls, path: Path):
+        pgs, _, broken = cls.read_pages(path)
         return cls.extract(pgs + [broken])

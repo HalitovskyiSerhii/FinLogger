@@ -14,8 +14,9 @@ class ExtractorService:
         pt = Path(path if path else cls.path)
         for unregistered in cls._unregistered():
             file = s3.download_file(unregistered, pt)
-            file_loc = getattr(file, 'path', pt/file.name)
-            extracted = Parser.pipe(file_loc)
+            extracted = Parser.pipe(file.path)
+            file.prosecure = Parser.prosecure
+            file.save(update_fields=['prosecure'])
             cls._save_instances(extracted)
             s3.save_file(file, pt)
             s3.rm_file(unregistered)
@@ -26,7 +27,7 @@ class ExtractorService:
         for time, amount, pan, code in extracted:
             instances.append(WithdrawalTransaction.crt(
                 time=time,
-                amount=float(amount.replace(',','')),
+                amount=amount,
                 pan=pan,
                 code=code
             ))
